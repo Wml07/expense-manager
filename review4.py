@@ -8,11 +8,12 @@ if os.path.exists("todo.txt"):
 print(todos)
 while True:
       a = input("加什么待办?(q结束)")
+      a = a.strip()
       if(a == "q"):
            break
       elif(a == "show"):
            for i,t in enumerate(todos):
-                print(i + 1, ".", t)
+                print(i + 1, ".", "- " + t)
       elif a == "d":
            n = int(input("删除第几条? "))          # 用户输编号
            t = todos.pop(n - 1)                  # ① 填：第几条 = 下标几？
