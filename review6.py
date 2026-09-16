@@ -19,5 +19,5 @@ for r in R_c("ZB.txt"):
     cate = r[0]
     dc[cate] = dc.get(cate, 0) + r[1]   # 累加金额
 
-for cate in dc:
-    print(f"{cate}:一共{dc[cate]}元")
+for C,M in dc.items():
+    print(f"{C}:{M}元")
