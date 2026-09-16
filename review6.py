@@ -1,7 +1,6 @@
 import os
 def R_c(wenj):
     records_02 = []
-    dc = {}
     if os.path.exists(wenj):
         with open(wenj,encoding="utf-8") as f:
             for line in f:
@@ -19,4 +18,6 @@ dc = {}
 for r in R_c("ZB.txt"):
     cate = r[0]
     dc[cate] = dc.get(cate, 0) + r[1]   # 累加金额
-print(dc)
+
+for cate in dc:
+    print(f"{cate}:一共{dc[cate]}元")
