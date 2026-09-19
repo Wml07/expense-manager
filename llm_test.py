@@ -9,20 +9,12 @@ client = OpenAI(
     base_url="https://dashscope.aliyuncs.com/compatible-mode/v1",
 )
 
-# resp = client.chat.completions.create(
-#     model="qwen-plus",
-#     messages=[{"role":"user", "content":"用一句话介绍你自己"}],
-# )
-
-# print(resp.choices[0].message.content)
-
-
 def ask(wenti):
     resp = client.chat.completions.create(
         model="qwen-plus",
-        messages=[{"role": "user", "content": wenti}],     # ← 第 1 个空
+        messages=[{"role": "user", "content": wenti}],     
     )
-    return resp.choices[0].message.content                                            # ← 第 2 个空
+    return resp.choices[0].message.content                                            
 
 print(ask("用一句话介绍云南"))
 print(ask("1+1等于几"))
