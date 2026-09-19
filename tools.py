@@ -1,5 +1,4 @@
 import os
-import json
 from dotenv import load_dotenv
 from openai import OpenAI
 load_dotenv(r"D:\WB01\2026-08-11-10-58-12\.env")
@@ -31,7 +30,4 @@ def Rc_02(wenjian):
                     continue
     return Lt
 
-print("工具箱加载完成")
-
-
-    
+print("工具箱自检通过")

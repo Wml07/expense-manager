@@ -17,3 +17,5 @@ for t in Sd_1:
 pl.sort(reverse=True)
 for v in pl[:3]:
     print(v[0],"元 -",v[1])
+
+
