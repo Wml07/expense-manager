@@ -17,3 +17,4 @@ for z in avc:
     S  = S + z.amount
     print(z.desc, z.amount)
 print(S)
+
