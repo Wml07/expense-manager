@@ -4,7 +4,7 @@
 # 注意：tools.py 里 ask() 的人设已经改成「只点评、一个字都不许出现数字」了，
 #       所以这里不用再拼规矩 —— 规矩已经在 system 里站着了。
 
-from tools import Rc_02, ask
+from tools import Rc_02, ask_dianping
 
 
 if __name__ == "__main__":
@@ -30,6 +30,6 @@ if __name__ == "__main__":
     # ④ 把算好的汇总交给 AI —— 它只管说话，不碰数字
     prompt = "这是我记账的汇总，数字已由程序算好，是准确的：\n" + huiwen
     print("【AI 的话】")
-    hua = ask(prompt)                # ← 空③ 调 ask，把 prompt 发过去
+    hua = ask_dianping(prompt)                # ← 空③ 调 ask，把 prompt 发过去
 
     print(hua)
