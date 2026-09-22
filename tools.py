@@ -10,7 +10,7 @@ client = OpenAI(
 )
 
 
-# 记账助手的人设（system 用）：站最前面，先给 AI 立规矩
+# 人设②：点评专用 —— 只点评花销、一个字都不许出现数字 → 配下面的 ask_dianping()
 SHEZHI_DIANPING = """
 请你只做一件事：用不超过 2 句话点评这份花销。硬性要求：
 ① 一个字都不许出现数字 —— 不要重复、不要重算、不要引入新的数字；
@@ -19,11 +19,12 @@ SHEZHI_DIANPING = """
 """
 
 
+# 点评专用的调用：跟 ask() 长得一样，只改一处 —— 换了人设（SHEZHI_DIANPING）
 def ask_dianping(wenti):
     resp = client.chat.completions.create(
         model="qwen-plus",
-        messages = [{"role":"system","content":SHEZHI_DIANPING},
-                    {"role":"user","content":wenti},
+        messages = [{"role":"system","content":SHEZHI_DIANPING},  # ← 人设：点评版
+                    {"role":"user","content":wenti},              # ← 用户的话（变量，不加引号）
                     ],
     )
     return resp.choices[0].message.content
@@ -48,6 +49,28 @@ def ask(wenti):
         messages=[{"role": "system", "content": SHEZHI},
                   {"role":"user","content":wenti},
                   ],     
+    )
+    return resp.choices[0].message.content
+
+
+# 人设③：资料问答 —— 只根据给的资料回答，资料里没写就直说 → 配下面的 ask_zhishi()
+# ⭐ 这是"一个用途一个函数"的第二次使用：新用途 → 新函数，老的 ask / ask_dianping 一个字不动
+SHEZHI_ZHISHI = """
+你是「资料问答助手」。用户会给你几段资料，然后提一个问题。
+
+【铁律】只能根据这些资料回答：
+① 资料里能查到的，照着资料答；
+② 资料里没写的，直接回"资料里没写"，一个字都不要编；
+③ 不许引入资料之外的任何知识，不许自己推测。
+"""
+
+
+def ask_zhishi(wenti):
+    resp = client.chat.completions.create(
+        model="qwen-plus",
+        messages=[{"role":"system","content":SHEZHI_ZHISHI},   # ← 人设：资料问答版
+                  {"role":"user","content":wenti},              # ← 用户的话（变量，不加引号）
+                  ],
     )
     return resp.choices[0].message.content
 
