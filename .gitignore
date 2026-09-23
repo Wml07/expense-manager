@@ -6,3 +6,6 @@ __pycache__/
 testenv/
 venv/
 .venv/
+
+# 向量库：能随时用 rag2.py 重建，属"生成物"，不入版本库
+xiangliang.json
