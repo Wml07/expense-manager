@@ -9,7 +9,7 @@
 # ------------------------------------------------------------------
 
 import json
-from tools import client
+from tools import client_embed
 
 # ① 读资料 + 切块（跟昨天一模一样） --------------------------------
 with open("../学习笔记.md", encoding="utf-8") as f:
@@ -25,8 +25,8 @@ vecs = []                           # 装所有向量，一个块一个
 for k in range(0, len(kuai), 10):   # 0, 10, 20 … 每次跳 10
     pi = kuai[k:k + 10]             # 切出这一批（最多 10 条）
 
-    resp = client.embeddings.create(
-        model="text-embedding-v3",  # 专门"把文字变数字"的模型
+    resp = client_embed.embeddings.create(
+        model="BAAI/bge-m3",        # 硅基流动的免费向量模型（1024 维，跟 text-embedding-v3 一样宽）
         input=pi,                   # 这一批文本
     )
 

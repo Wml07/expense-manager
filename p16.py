@@ -6,7 +6,7 @@
 #
 # 运行：D:\python3.11.8\python.exe p16.py
 
-from tools import client, SHEZHI, ask   # ask 拿来做对照组（它每轮都是全新的，不带历史）
+from tools import client_chat, SHEZHI, ask   # ask 拿来做对照组（它每轮都是全新的，不带历史）
 
 # ① 开局先摆好一个列表。system 永远站第一格，而且只放一次 —— 摆在开头，管全局。
 xiaoxi = [
@@ -21,7 +21,7 @@ def shuo(wo_de_hua):
     xiaoxi.append({"role": "user", "content": wo_de_hua})
 
     # ③ 把【整份列表】发过去 —— 注意是整份，前面聊过的全在里面
-    resp = client.chat.completions.create(model="qwen-plus", messages=xiaoxi)
+    resp = client_chat.chat.completions.create(model="glm-4-flash", messages=xiaoxi)
     ta_de_hua = resp.choices[0].message.content
 
     # ④ 它说的话也塞回列表。

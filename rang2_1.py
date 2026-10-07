@@ -1,5 +1,5 @@
 import json
-from tools import client
+from tools import client_embed
 
 with open("../学习笔记.md",encoding="utf-8") as f:
     quanwen = f.read()
@@ -11,8 +11,8 @@ vecs = []
 for k in range(0, len(kuai), 10):
     pi = kuai[k:k + 10]
 
-    resp = client.embeddings.create(
-        model="text-embedding-v3",
+    resp = client_embed.embeddings.create(
+        model="BAAI/bge-m3",
         input=pi,
     ) 
     for d in resp.data:

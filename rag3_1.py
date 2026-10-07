@@ -1,5 +1,5 @@
 import json
-from tools import client, ask_zhishi
+from tools import client_embed, ask_zhishi
 
 with open("xiangliang.json", encoding="utf-8") as f:
     ku = json.load(f)
@@ -8,8 +8,8 @@ with open("xiangliang.json", encoding="utf-8") as f:
 
 wenti = "怎么让它别瞎编？" 
 
-resp = client.embeddings.create(
-    model="text-embedding-v3",
+resp = client_embed.embeddings.create(
+    model="BAAI/bge-m3",
     input=[wenti],
 )
 w_vec = resp.data[0].embedding

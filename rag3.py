@@ -5,7 +5,7 @@
 # ------------------------------------------------------------------
 
 import json
-from tools import client, ask_zhishi
+from tools import client_embed, ask_zhishi
 
 # ① 读回向量库（rag2.py 建好的） ------------------------------------
 with open("xiangliang.json", encoding="utf-8") as f:
@@ -16,8 +16,8 @@ vecs = ku["vecs"]           # 每一块对应的那串数字
 # ② 把问题也变成一串数字 -------------------------------------------
 wenti = "怎么防止 AI 乱说话？"
 
-resp = client.embeddings.create(
-    model="text-embedding-v3",
+resp = client_embed.embeddings.create(
+    model="BAAI/bge-m3",
     input=[wenti],          # 只有一条，也要用列表包起来
 )
 w_vec = resp.data[0].embedding

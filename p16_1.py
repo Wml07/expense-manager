@@ -1,4 +1,4 @@
-from tools import client, SHEZHI, ask
+from tools import client_chat, SHEZHI, ask
 
 xiaoxi = [
     {"role":"system", "content":SHEZHI},
@@ -8,7 +8,7 @@ def shuo(wo_de_hua):
     """带历史地说一句:我塞进去，整份发过去，它的话也塞回去"""
 
     xiaoxi.append({"role":"user", "content":wo_de_hua})
-    resp = client.chat.completions.create(model="qwen-plus", messages=xiaoxi)
+    resp = client_chat.chat.completions.create(model="glm-4-flash", messages=xiaoxi)
     ta_de_hua = resp.choices[0].message.content
 
     xiaoxi.append({"role":"assistant","content":ta_de_hua})

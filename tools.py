@@ -2,11 +2,27 @@ import os
 from dotenv import load_dotenv
 from openai import OpenAI
 load_dotenv(r"D:\WB01\2026-08-11-10-58-12\.env")
-key = os.getenv("DASHSCOPE_API_KEY")
 
-client = OpenAI(
-    api_key = key,
-    base_url="https://dashscope.aliyuncs.com/compatible-mode/v1",
+
+# ══════════════════════════════════════════════════════════════════
+# 两个 client —— 一个 client 只能连一家服务；我们用了两家，所以要有两个
+#   （同一个道理你学过两遍了：一个用途 → 一个函数 / 一个用途 → 一个 client）
+# ══════════════════════════════════════════════════════════════════
+
+# ① client_chat —— 管「说话」（聊天 / 人设）
+#    服务商：智谱　免费模型：glm-4-flash
+#    下面三个 ask_xxx 全用它
+client_chat = OpenAI(
+    api_key = os.getenv("ZHIPU_API_KEY"),
+    base_url="https://open.bigmodel.cn/api/paas/v4/",
+)
+
+# ② client_embed —— 管「变数字」（向量 / embedding）
+#    服务商：硅基流动　免费模型：BAAI/bge-m3（1024 维，跟原来的 text-embedding-v3 一样宽）
+#    rag2.py / rag3.py / rag3_1.py 用它
+client_embed = OpenAI(
+    api_key = os.getenv("SILICONFLOW_API_KEY"),
+    base_url="https://api.siliconflow.cn/v1",
 )
 
 
@@ -21,8 +37,8 @@ SHEZHI_DIANPING = """
 
 # 点评专用的调用：跟 ask() 长得一样，只改一处 —— 换了人设（SHEZHI_DIANPING）
 def ask_dianping(wenti):
-    resp = client.chat.completions.create(
-        model="qwen-plus",
+    resp = client_chat.chat.completions.create(
+        model="glm-4-flash",
         messages = [{"role":"system","content":SHEZHI_DIANPING},  # ← 人设：点评版
                     {"role":"user","content":wenti},              # ← 用户的话（变量，不加引号）
                     ],
@@ -44,8 +60,8 @@ SHEZHI = """
 
 
 def ask(wenti):
-    resp = client.chat.completions.create(
-        model="qwen-plus",
+    resp = client_chat.chat.completions.create(
+        model="glm-4-flash",
         messages=[{"role": "system", "content": SHEZHI},
                   {"role":"user","content":wenti},
                   ],     
@@ -66,8 +82,8 @@ SHEZHI_ZHISHI = """
 
 
 def ask_zhishi(wenti):
-    resp = client.chat.completions.create(
-        model="qwen-plus",
+    resp = client_chat.chat.completions.create(
+        model="glm-4-flash",
         messages=[{"role":"system","content":SHEZHI_ZHISHI},   # ← 人设：资料问答版
                   {"role":"user","content":wenti},              # ← 用户的话（变量，不加引号）
                   ],

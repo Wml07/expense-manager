@@ -2,16 +2,17 @@ import os
 from dotenv import load_dotenv
 from openai import OpenAI
 load_dotenv(r"D:\WB01\2026-08-11-10-58-12\.env")
-key = os.getenv("DASHSCOPE_API_KEY")
 
+# 这个文件最早的用途：9/19 第一次打通大模型 API。
+# 现在换成「冒烟测试」—— 换服务商 / 换 key 之后，先跑它：能打印出两句话，就说明通了。
 client = OpenAI(
-    api_key = key,
-    base_url="https://dashscope.aliyuncs.com/compatible-mode/v1",
+    api_key = os.getenv("ZHIPU_API_KEY"),
+    base_url="https://open.bigmodel.cn/api/paas/v4/",
 )
 
 def ask(wenti):
     resp = client.chat.completions.create(
-        model="qwen-plus",
+        model="glm-4-flash",
         messages=[{"role": "user", "content": wenti}],     
     )
     return resp.choices[0].message.content                                            
