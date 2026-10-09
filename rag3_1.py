@@ -6,7 +6,7 @@ with open("xiangliang.json", encoding="utf-8") as f:
     kuai = ku["kuai"]
     vecs = ku["vecs"]
 
-wenti = "怎么让它别瞎编？" 
+wenti = "帮我写一个爬虫" 
 
 resp = client_embed.embeddings.create(
     model="BAAI/bge-m3",
@@ -37,10 +37,12 @@ ziliao = ""
 for d, i in defen[:3]:
     ziliao = ziliao + kuai[i] + "\n\n"
 
-prompt = "以下是我资料里的几个片段：\n\n" + ziliao + "\n\n我的问题是：" + wenti
-
-print("【送出去的字数】", len(prompt), "字")
-
-hua = ask_zhishi(prompt)
-print("【AI 的回答】")
-print(hua)
+zui_gao = defen[0][0] 
+if(zui_gao < 0.5):
+    print("资料里没写")
+else:
+    prompt = "以下是我资料里的几个片段：\n\n" + ziliao + "\n\n我的问题是：" + wenti
+    print("【送出去的字数】", len(prompt), "字")
+    hua = ask_zhishi(prompt)
+    print("【AI 的回答】")
+    print(hua)
