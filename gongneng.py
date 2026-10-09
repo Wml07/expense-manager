@@ -1,13 +1,13 @@
-# 借工具箱 + 找向量库：它俩都住在隔壁的「工具箱」文件夹里
+# 借工具箱 + 找向量库：它俩都住在隔壁的「core」文件夹里
 #   Python 默认只找"自己这一层"，东西放到隔壁就找不到了，所以先报地址。
-#   _工具箱 这个变量就是那个地址，后面读向量库也用它。
+#   _core 这个变量就是那个地址，后面读向量库也用它。
 import os, sys
-_工具箱 = os.path.join(os.path.dirname(os.path.abspath(__file__)), "工具箱")
-sys.path.insert(0, _工具箱)
+_core = os.path.join(os.path.dirname(os.path.abspath(__file__)), "core")
+sys.path.insert(0, _core)
 import json
 from tools import client_embed, ask_zhishi
 #判断有没有原始文件数据
-with open(os.path.join(_工具箱, "xiangliang.json"), encoding="utf-8") as f:
+with open(os.path.join(_core, "xiangliang.json"), encoding="utf-8") as f:
     ku = json.load(f)
     kuai = ku["kuai"]
     vecs = ku["vecs"]
