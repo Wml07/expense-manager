@@ -15,7 +15,7 @@ from tools import ask_zhishi
 
 # ① 读整份资料 ------------------------------------------------------
 # "../学习笔记.md" 里的 ".." = 上一层的文件夹（脚本在这层，笔记在上一层）
-with open("../学习笔记.md", encoding="utf-8") as f:
+with open("../../学习笔记.md", encoding="utf-8") as f:
     quanwen = f.read()              # 一个文件 → 一个大字符串
 
 print("整份资料一共", len(quanwen), "个字")

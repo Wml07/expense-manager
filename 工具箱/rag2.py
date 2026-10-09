@@ -11,8 +11,15 @@
 import json
 from tools import client_embed
 
+# 路径挂在"文件自己"身上，不靠"当前在哪个文件夹"——
+# 否则换个地方运行，会把向量库写到别的文件夹去（这种事不报错，最难发现）。
+import os
+_工具箱目录 = os.path.dirname(os.path.abspath(__file__))
+_笔记路径   = os.path.join(os.path.dirname(_工具箱目录), "..", "学习笔记.md")
+_向量库路径 = os.path.join(_工具箱目录, "xiangliang.json")
+
 # ① 读资料 + 切块（跟昨天一模一样） --------------------------------
-with open("../学习笔记.md", encoding="utf-8") as f:
+with open(_笔记路径, encoding="utf-8") as f:
     quanwen = f.read()
 
 kuai = quanwen.split("\n## ")       # 还是砍在二级标题上
@@ -40,7 +47,7 @@ print("第一条向量有几个数字：", len(vecs[0]))
 
 # ③ 存盘 ------------------------------------------------------------
 # 把"块"和"向量"一起存起来，下次直接用
-with open("xiangliang.json", "w", encoding="utf-8") as f:
+with open(_向量库路径, "w", encoding="utf-8") as f:
     json.dump({"kuai": kuai, "vecs": vecs}, f, ensure_ascii=False)
 
 print("向量库已存好 → xiangliang.json")

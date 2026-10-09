@@ -1,7 +1,7 @@
 import json
 from tools import client_embed
 
-with open("../学习笔记.md",encoding="utf-8") as f:
+with open("../../学习笔记.md",encoding="utf-8") as f:
     quanwen = f.read()
 
 kuai = quanwen.split("\n## ")

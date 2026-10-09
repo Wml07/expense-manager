@@ -1,3 +1,8 @@
+# 借工具箱：工具箱住在隔壁的「工具箱」文件夹里
+#   Python 默认只找"自己这一层"，东西放到隔壁就找不到了，
+#   所以开头要先把地址报给它。（__file__ = 本文件自己的完整路径）
+import os, sys
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "工具箱"))
 # expense_ai2.py —— 代码管数，AI 管话
 # 分工铁律：数字全部由代码算好；AI 只负责把算好的数字说成人话
 #

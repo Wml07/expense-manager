@@ -1,6 +1,6 @@
 from tools import ask_zhishi
 
-with open("../学习笔记.md",encoding="utf-8") as f:
+with open("../../学习笔记.md",encoding="utf-8") as f:
     quanwen = f.read()
 
 
