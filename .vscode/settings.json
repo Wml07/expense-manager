@@ -1,0 +1,35 @@
+{
+    // ══════════════════════════════════════════════════════════
+    // 这份配置是【给编辑器看的】，不影响 Python 运行。
+    //
+    // 解决的问题：我们的模块（tools.py）住在 core/ 子文件夹里，
+    //   运行时靠 sys.path.insert 报地址，所以【Python 跑的时候】找得到；
+    //   但 pylint 是静态检查 —— 它只读文本、不执行代码，
+    //   所以按默认规则找不到 tools，就报 E0401（那条红波浪线）。
+    // ══════════════════════════════════════════════════════════
+    "python.analysis.extraPaths": [
+        "./",
+        "./core"
+    ],
+    "python.autoComplete.extraPaths": [
+        "./",
+        "./core"
+    ],
+
+    "pylint.args": [
+        // ① 替 pylint 补上那份"报地址"（--init-hook = 它启动时先执行这几句）
+        //    两条路径覆盖两种情况：VS Code 打开的是 expense-manager，或打开的是 WB01
+        "--init-hook=import sys, os; sys.path.insert(0, os.path.join(os.getcwd(), 'core')); sys.path.insert(0, os.path.join(os.getcwd(), 'projects', 'expense-manager', 'core'))",
+        // ② 关掉"import 该放最上面"（C0413）—— 先报地址再 import，天然违反这条
+        "--disable=wrong-import-position",
+        // ③ 关掉一批【风格建议】。它们不是 bug，只是"写法口味"，
+        //    对现在的我们来说噪声大于收益（真正能抓 bug 的 E 级、未定义变量、没用上的变量 全都还在）。
+        //    - missing-module-docstring / missing-function-docstring：要求每个文件、每个函数都写文档字符串
+        //    - invalid-name：要求全局变量名全大写（它把普通全局变量误当"常量"）
+        //    - multiple-imports：不许 import os, sys 写成一行（这是我们统一的写法，方便）
+        //    - consider-using-enumerate：劝你把 range(len(...)) 改成 enumerate（不是必须）
+        //    - no-else-return：return 后面的 else 可以省掉（省了反而难读）
+        //    - global-statement：劝你别用 global —— 这个我们是【故意】用的，白板就挂外面
+        "--disable=missing-module-docstring,missing-function-docstring,invalid-name,multiple-imports,consider-using-enumerate,no-else-return,global-statement"
+    ]
+}

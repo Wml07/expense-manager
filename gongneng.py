@@ -1,11 +1,13 @@
 # 借工具箱 + 找向量库：它俩都住在隔壁的「core」文件夹里
 #   Python 默认只找"自己这一层"，东西放到隔壁就找不到了，所以先报地址。
 #   _core 这个变量就是那个地址，后面读向量库也用它。
+# pylint: disable=wrong-import-position
+# （跨文件夹借模块必须先报地址再 import，天然违反"import 放最上面"，故本文件放行）
 import os, sys
 _core = os.path.join(os.path.dirname(os.path.abspath(__file__)), "core")
 sys.path.insert(0, _core)
 import json
-from tools import client_embed, ask_zhishi
+from tools import client_embed, ask_zhishi,client_chat, SHEZHI_JIZHANG
 #判断有没有原始文件数据
 with open(os.path.join(_core, "xiangliang.json"), encoding="utf-8") as f:
     ku = json.load(f)
@@ -19,7 +21,7 @@ def xiangsidu(a, b):
         zong = zong + a[i] * b[i]
     return zong
 
-
+#接问的相应的方法
 def wen_wenti(wenti):
 
     resp = client_embed.embeddings.create(
@@ -37,10 +39,33 @@ def wen_wenti(wenti):
     for d, i in defen[:3]:
         ziliao = ziliao + kuai[i] + "\n\n"
 
-    zui_gao = defen[0][0] 
+    zui_gao = defen[0][0]
     if(zui_gao < 0.5):
         return "资料里没写"
     else:
         prompt = "以下是我资料里的几个片段：\n\n" + ziliao + "\n\n我的问题是：" + wenti
         hua = ask_zhishi(prompt)
     return hua
+#接入记账的功能
+xiaoxi = [
+    {"role": "system", "content": SHEZHI_JIZHANG},
+]
+
+
+zong = 0
+def ji_zhang(wo_de_hua):
+    global zong
+    xiaoxi.append({"role": "user", "content": wo_de_hua})
+    shuzi = ""
+    for z in wo_de_hua:
+        if z.isdigit():
+            shuzi = shuzi + z
+
+    jine = int(shuzi)
+    zong = zong + jine
+
+    resp = client_chat.chat.completions.create(model="glm-4-flash", messages=xiaoxi)
+    ta_de_hua = resp.choices[0].message.content
+    xiaoxi.append({"role": "assistant", "content": ta_de_hua})
+
+    return ta_de_hua + f"总计:{zong}元。"
