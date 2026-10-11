@@ -7,12 +7,17 @@ import os, sys
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "core"))
 
 
-from gongneng import wen_wenti,ji_zhang
+from gongneng import wen_wenti,ji_zhang,cha_mingxi
+
+# ⚠️ 菜单号和下面那串 if shuru == 是【绑死的】：
+#    菜单上写几号，下面的引号里就得是几号。改一个必须改另一个，
+#    否则会出现"点了 3 却弹出别的功能"——程序不报错，纯静默错位。
 while True:
     print("===== 开销管家 =====")
     print("1. 记一笔账")
     print("2. 问个问题")
-    print("3. 退出")
+    print("3. 查明细")
+    print("4. 退出")
 
     shuru = input("请输入编号:")
     if shuru == '1':
@@ -22,6 +27,8 @@ while True:
         wenti_01 = input("请输入你的问题:")
         print(wen_wenti(wenti_01))
     elif shuru == '3':
+        print(cha_mingxi())          # 明细在 gongneng 里拼好，这里只负责打印
+    elif shuru == '4':
         print("再见")
         break
     else:
