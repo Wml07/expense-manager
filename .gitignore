@@ -9,3 +9,6 @@ venv/
 
 # 向量库：能随时用 rag2.py 重建，属"生成物"，不入版本库
 xiangliang.json
+
+# 账本数据：使用时才产生的用户数据，不是代码，不入版本库
+zhangben.txt

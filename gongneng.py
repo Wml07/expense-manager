@@ -52,7 +52,18 @@ xiaoxi = [
 ]
 
 
+zhangben = os.path.join(os.path.dirname(os.path.abspath(__file__)), "zhangben.txt")
+
 zong = 0
+if os.path.exists(zhangben):
+    with open(zhangben, encoding="utf-8") as f:
+        for hang in f:
+            try:
+                zong = zong + int(hang)
+            except:
+                continue
+
+
 def ji_zhang(wo_de_hua):
     global zong
     xiaoxi.append({"role": "user", "content": wo_de_hua})
@@ -63,6 +74,9 @@ def ji_zhang(wo_de_hua):
 
     jine = int(shuzi)
     zong = zong + jine
+
+    with open(zhangben, "a", encoding="utf-8") as f:
+        f.write(str(jine) + "\n")
 
     resp = client_chat.chat.completions.create(model="glm-4-flash", messages=xiaoxi)
     ta_de_hua = resp.choices[0].message.content
