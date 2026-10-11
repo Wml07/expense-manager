@@ -16,10 +16,10 @@ with open(os.path.join(_core, "xiangliang.json"), encoding="utf-8") as f:
 #算问题相似度
 def xiangsidu(a, b):
     """两串数字对位相乘，再全加起来。值越大 = 意思越接近。"""
-    zong = 0
+    zongshu = 0
     for i in range(len(a)):
-        zong = zong + a[i] * b[i]
-    return zong
+        zongshu = zongshu + a[i] * b[i]
+    return zongshu
 
 #接问的相应的方法
 def wen_wenti(wenti):
@@ -36,11 +36,11 @@ def wen_wenti(wenti):
     defen.sort(reverse=True)
 
     ziliao = ""
-    for d, i in defen[:3]:
+    for _ , i in defen[:3]:
         ziliao = ziliao + kuai[i] + "\n\n"
 
     zui_gao = defen[0][0]
-    if(zui_gao < 0.5):
+    if zui_gao < 0.5:
         return "资料里没写"
     else:
         prompt = "以下是我资料里的几个片段：\n\n" + ziliao + "\n\n我的问题是：" + wenti
@@ -60,7 +60,7 @@ if os.path.exists(zhangben):
         for hang in f:
             try:
                 zong = zong + int(hang)
-            except:
+            except ValueError:
                 continue
 
 
@@ -75,8 +75,8 @@ def ji_zhang(wo_de_hua):
     jine = int(shuzi)
     zong = zong + jine
 
-    with open(zhangben, "a", encoding="utf-8") as f:
-        f.write(str(jine) + "\n")
+    with open(zhangben, "a", encoding="utf-8") as f_wj:
+        f_wj.write(str(jine) + "\n")
 
     resp = client_chat.chat.completions.create(model="glm-4-flash", messages=xiaoxi)
     ta_de_hua = resp.choices[0].message.content
