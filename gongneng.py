@@ -13,6 +13,7 @@ with open(os.path.join(_core, "xiangliang.json"), encoding="utf-8") as f:
     ku = json.load(f)
     kuai = ku["kuai"]
     vecs = ku["vecs"]
+
 #算问题相似度
 def xiangsidu(a, b):
     """两串数字对位相乘，再全加起来。值越大 = 意思越接近。"""
@@ -20,6 +21,33 @@ def xiangsidu(a, b):
     for i in range(len(a)):
         zongshu = zongshu + a[i] * b[i]
     return zongshu
+
+
+def qu_json(hua):
+    """把 AI 回的一段文字，尽量抠成一个字典（dict）。
+
+    为什么要这一步？因为 AI 回话永远是【文字】，不是程序能用的【数据】。
+    它可能守规矩只回 {"答案":..., "依据":...}，
+    也可能手滑包一层 ```json ... ```，或者前后啰嗦两句。
+    这个函数就负责"从一堆文字里把那个 JSON 抠出来"。
+
+    抠成功 → 返回字典；抠不出来 → 返回 None（代表"连格式都没守住"）。
+    """
+    t = hua.strip()
+    if t.startswith("```"):              # 拆掉可能存在的 ```json ... ``` 包裹
+        t = t.strip("`")                 # 先削掉两头的反引号
+        if t.lower().startswith("json"):  # 如果开头是 json 这四个字母
+            t = t[4:]                     # 也削掉
+        t = t.strip()
+    zuo = t.find("{")                    # 第一个左花括号
+    you = t.rfind("}")                   # 最后一个右花括号
+    if zuo == -1 or you == -1:           # 根本没有花括号 → 不是 JSON
+        return None
+    try:
+        return json.loads(t[zuo:you + 1])   # 只取中间那一段来解析
+    except ValueError:                      # 解析不了 = 格式坏了
+        return None
+
 
 #接问的相应的方法
 def wen_wenti(wenti):
@@ -36,16 +64,40 @@ def wen_wenti(wenti):
     defen.sort(reverse=True)
 
     ziliao = ""
+    biaoti = []                              # 顺手记下"命中了哪几节"—— 待会儿要当来源用
     for _ , i in defen[:3]:
         ziliao = ziliao + kuai[i] + "\n\n"
+        biaoti.append(kuai[i].split("\n")[0].strip()[:24])   # 只取每节第一行当标题
 
     zui_gao = defen[0][0]
-    if zui_gao < 0.5:
+    if zui_gao < 0.5:                        # 闸门：分数太低 → 连问都不问
         return "资料里没写"
+
+    prompt = "以下是我资料里的几个片段：\n\n" + ziliao + "\n\n我的问题是：" + wenti
+    hua = ask_zhishi(prompt)
+
+    # ── 把 AI 的结构化回复拆开，只取「答案」那一格 ────────────────────
+    # 人设要求它回 {"答案":..., "依据":...}。这里只取"答案"，不取"依据"——
+    # 为什么？（这是 C 项实测换来的结论，见下方注释）
+    d = qu_json(hua)
+    if d is None:
+        daan = hua.strip()                   # 它没守住 JSON 格式 → 退回原文，别把话弄丢
     else:
-        prompt = "以下是我资料里的几个片段：\n\n" + ziliao + "\n\n我的问题是：" + wenti
-        hua = ask_zhishi(prompt)
-    return hua
+        daan = str(d.get("答案", "")).strip()
+
+    if daan == "资料里没写":                  # AI 自己说了没写 → 直接放行
+        return "资料里没写"
+
+    # ── 【来源透明】把"这段话是从哪几节召回的"附在后面 ──────────────
+    # ⭐ C 项实测结论：想用"代码校验依据真假"来防编造，这条路【走不通】——
+    #    实测发现判据是【反向】的：编造的答案因为照抄了喂给它的片段，
+    #    依据命中率反而高达 92%~100%；真答案跨块拼接，只有 64%。
+    #    而且"依据是否支撑答案"是【语义问题】，字面匹配根本管不了。
+    # 所以换个诚实的做法：不判真假，改把【来源摊开】——
+    #    AI 说的来源它自己能编，代码说的来源（= 检索命中哪几节）编不了。
+    #    让用户看着来源自己核对。这是"代码管'话从哪来'"。
+    laiyuan = "、".join(biaoti)
+    return daan + "\n\n（来源：" + laiyuan + "）"
 #接入记账的功能
 xiaoxi = [
     {"role": "system", "content": SHEZHI_JIZHANG},
