@@ -9,15 +9,21 @@
   **这一点是靠代码保证的，不是靠提示词祈祷。**
 
 <p align="center">
-  <img src="docs/demo-1-jizhang.gif" width="700" alt="记账与查明细">
+  <img src="https://gcore.jsdelivr.net/gh/Wml07/expense-manager@main/docs/demo-1-jizhang.gif" width="700" alt="记账与查明细">
 </p>
 
 <p align="center">
-  <img src="docs/demo-2-wenti.gif" width="700" alt="资料问答（附来源）">
+  <img src="https://gcore.jsdelivr.net/gh/Wml07/expense-manager@main/docs/demo-2-wenti.gif" width="700" alt="资料问答（附来源）">
 </p>
 
 > 上面两张动图不是录屏，是用 [`docs/make_demo.py`](docs/make_demo.py)
 > 把**真实运行输出**逐行播放出来的 —— 改了功能重跑一次就更新，不会"图跟代码对不上"。
+
+> ⚠️ **图片为什么用 jsDelivr 外链，而不用仓库内相对路径**：GitHub 渲染仓库内图片时，
+> 实际是把 `github.com/.../raw/...` 302 跳到 `raw.githubusercontent.com` —— 这个域名
+> **国内访问不了**（实测：TCP 能连上，但 TLS 握手按域名被掐断），表现就是 README 一直转圈。
+> 改成绝对的 jsDelivr 链接后，GitHub 会走它自己的图片代理（camo）中转，国内也能正常显示。
+> 图片本体仍在仓库 `docs/` 里，jsDelivr 只是"换个门脸"把它送到你面前。
 
 ---
 
