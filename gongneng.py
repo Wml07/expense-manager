@@ -67,7 +67,11 @@ def wen_wenti(wenti):
     biaoti = []                              # 顺手记下"命中了哪几节"—— 待会儿要当来源用
     for _ , i in defen[:3]:
         ziliao = ziliao + kuai[i] + "\n\n"
-        biaoti.append(kuai[i].split("\n")[0].strip()[:24])   # 只取每节第一行当标题
+        # 只取每节第一行当标题。⚠️ 这里【不要截断】：早先写了 [:24]，
+        # 结果把「25. system 人设：给 AI 立规矩（prompt 工程）」腰斩成
+        # 「...立规矩（p」—— 半个括号挂在来源里，一眼就看得出糙。
+        # 标题本来就不长，完整显示反而更像"出处"。
+        biaoti.append(kuai[i].split("\n")[0].strip())
 
     zui_gao = defen[0][0]
     if zui_gao < 0.5:                        # 闸门：分数太低 → 连问都不问
