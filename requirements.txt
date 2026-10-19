@@ -2,5 +2,8 @@
 openai>=1.0          # 调大模型：聊天 + 向量，两家服务商都用这一个库
 python-dotenv        # 把 .env 里的 API Key 读进环境变量
 
+# 账本存进 MySQL 之后要多这一个（没有它 import db 就报错）
+PyMySQL>=1.1         # 纯 Python 写的 MySQL 驱动，不用编译，装起来最省事
+
 # 下面这个只有重新生成 README 演示动图时才用得上（docs/make_demo.py）
 Pillow

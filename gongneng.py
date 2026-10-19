@@ -8,6 +8,8 @@ _core = os.path.join(os.path.dirname(os.path.abspath(__file__)), "core")
 sys.path.insert(0, _core)
 import json
 from tools import client_embed, ask_zhishi,client_chat, SHEZHI_JIZHANG
+# 账本搬进 MySQL 之后，读写全部交给 db.py
+from db import jian_biao, cun_yi_bi, du_mingxi, he_ji
 #判断有没有原始文件数据
 with open(os.path.join(_core, "xiangliang.json"), encoding="utf-8") as f:
     ku = json.load(f)
@@ -102,17 +104,14 @@ def wen_wenti(wenti):
     #    让用户看着来源自己核对。这是"代码管'话从哪来'"。
     laiyuan = "、".join(biaoti)
     return daan + "\n\n（来源：" + laiyuan + "）"
-#接入记账的功能
+# ── 记账：账本已迁到 MySQL，启动时先把表准备好 ─────────────────────────
+# jian_biao 里是 CREATE TABLE IF NOT EXISTS，表已经存在就跳过，
+# 所以每次启动顺手跑一遍是安全的，新电脑上第一次跑也能自动建表。
+jian_biao()
+
 xiaoxi = [
     {"role": "system", "content": SHEZHI_JIZHANG},
 ]
-
-
-zhangben = os.path.join(os.path.dirname(os.path.abspath(__file__)), "zhangben.txt")
-
-# ── 两个"钱袋子"，都放在模块级（= 活到程序结束，不关就不丢）────────────
-zong = 0        # ① 总额：所有笔加起来的那个数（一笔一加）
-mingxi = []     # ② 明细：一笔占一个格子，按先后顺序排队（存"原文"，不是抠出来的数字）
 
 
 def zhua_shuzi(wo_de_hua):
@@ -120,8 +119,11 @@ def zhua_shuzi(wo_de_hua):
 
     为什么单独拎成一个函数？因为有【两个地方】要干同一件事：
       ① 记账时（从用户刚说的话里抠）
-      ② 启动读回时（从文件里的每一行里抠）
+      ② 一次性迁移脚本里（从 zhangben.txt 的每一行里抠）
     —— 同一件事要干两遍，就该抽成函数：以后只维护这一份，改一处两处都生效。
+
+    ⚠️ 它只认阿拉伯数字，认不出「两百」这种中文数字，也认不出小数点。
+       「喝酒 200」能抠出 200；「打车 12.5」会被抠成 125。这是已知的粗糙处。
     """
     shuzi = ""
     for z in wo_de_hua:          # 一个字一个字过
@@ -130,54 +132,43 @@ def zhua_shuzi(wo_de_hua):
     return int(shuzi)            # 先拼字（"2"+"3"→"23"），最后一次性转成数（23）
 
 
-# ── 启动读回：把账本文件里的每一笔读进内存 ────────────────────────────
-# 现在文件里每行长这样：「早饭23」——名字 + 金额【原样】存着。
-# （比只存数字更"原始"：昨天存的是算过的金额，今天存的是用户原话）
-if os.path.exists(zhangben):                 # 第一次跑还没这个文件，先问一句在不在
-    with open(zhangben, encoding="utf-8") as f:
-        for hang in f:                       # 一行 = 一笔
-            hang = hang.strip()              # 削掉行尾看不见的换行符
-            if hang == "":
-                continue                     # 空行跳过（防文件末尾的脏空行）
-            try:
-                hang_jine = zhua_shuzi(hang)     # 从这一行里把金额抠出来
-            except ValueError:
-                continue                     # 万一这行一个数字都没有，跳过、不崩
-            mingxi.append(hang)              # ① 明细：把这一笔原文留住
-            zong = zong + hang_jine          # ② 总额：顺手累加上去
-
-
 def cha_mingxi():
     """查明细：把账本里每一笔列出来，末尾带上笔数和合计。返回一段字符串。
 
     注意：这里【只 return、不 print】—— 打印是"门"（zhushou.py）的活。
     （10/9 那次"答案打两遍"就是函数里多 print 了一遍，踩过的坑）
     """
-    if len(mingxi) == 0:                     # 一笔都还没有
+    hangs = du_mingxi()                      # 从数据库读全部明细：列表，每项一个字典
+    if len(hangs) == 0:                      # 一笔都还没有
         return "账本还是空的，先记一笔吧。"
     hua = "账本明细：\n"
     xuhao = 1                                # 第几笔（从 1 开始数，给人看的）
-    for yi_bi in mingxi:                     # 一笔一笔过
-        hua = hua + str(xuhao) + ". " + yi_bi + "\n"
+    for yi_bi in hangs:                      # 一笔一笔过
+        # 按列名取原文。写 yi_bi["neirong"] 而不是 yi_bi[1]：
+        # 列名写错会当场报错，位置写错（比如 [2] 取到金额）会静默出错。
+        hua = hua + str(xuhao) + ". " + yi_bi["neirong"] + "\n"
         xuhao = xuhao + 1
-    hua = hua + "共 " + str(len(mingxi)) + " 笔，合计 " + str(zong) + " 元。"
+    hua = hua + "共 " + str(len(hangs)) + " 笔，合计 " + str(he_ji()) + " 元。"
     return hua
 
 
 def ji_zhang(wo_de_hua):
-    """记一笔账：抠出金额 → 累加总额 → 落盘 → 让 AI 点评一句。"""
-    global zong                                  # 要【重新赋值】外面的 zong（= 换本子），必须声明
+    """记一笔账：抠出金额 → 写进数据库 → 让 AI 点评一句。
+
+    ⭐ 跟 txt 时代比，最大的变化在这里：
+       以前要维护一个模块级变量 zong（总额），函数里改它必须先写 global。
+       现在总额【根本不存】，每次要显示就 SUM() 现查（he_ji()）。
+       所以 global 那句话不用写了 —— 不是因为忘了，是因为不再需要。
+       存"每一笔"、算"累计"，累计永远是查询出来的结果，它不可能翻倍。
+    """
     xiaoxi.append({"role": "user", "content": wo_de_hua})
 
-    jine = zhua_shuzi(wo_de_hua)                 # 抠数字（跟读回用的是同一个函数）
-    zong = zong + jine                           # 总额累加
-    mingxi.append(wo_de_hua)                     # 明细也留一份（.append 是"改本子"，不用 global）
-
-    with open(zhangben, "a", encoding="utf-8") as f_wj:     # "a" = 追加（不是 "w" 清空）
-        f_wj.write(wo_de_hua + "\n")             # 存【整句原文】，含"早饭"这种名字
+    jine = zhua_shuzi(wo_de_hua)                 # 抠数字（跟迁移脚本用的是同一个函数）
+    cun_yi_bi(wo_de_hua, jine)                   # ⚠️ 立刻入库，等于以前那行 "a" 追加
+                                                 #    （不能攒着最后一起写：中途崩了就丢账）
 
     resp = client_chat.chat.completions.create(model="glm-4-flash", messages=xiaoxi)
     ta_de_hua = resp.choices[0].message.content
     xiaoxi.append({"role": "assistant", "content": ta_de_hua})
 
-    return ta_de_hua + f"总计:{zong}元。"
+    return ta_de_hua + f"总计:{he_ji()}元。"
