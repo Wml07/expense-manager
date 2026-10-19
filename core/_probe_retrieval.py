@@ -1,16 +1,18 @@
 # -*- coding: utf-8 -*-
-"""检索诊断探针：看「正确的那一节」在 top-N 里排第几。
+"""检索诊断探针 V2：量「正确答案排第几」，并统计 top-k 命中率。
 
 【为什么写它】
-C 项实测发现「问 global 被误杀（0.472）」的真因**不是阈值太低**，
-而是【讲 global 的那一节压根没被召回到前 3 名】。
-—— 那么问题来了：它到底排第几？把 top-k 从 3 扩到 5 或 8，救得回来吗？
-   这个探针就是来量这个的：把 top-8 全部打出来，标出"目标节"的位置。
+C 项实测发现「问 global 被误杀（0.472）」时，我判断真因是"检索没召回"。
+但这个判断是**基于错误的期望标注**得出来的 —— 我把两道「资料里其实有答案」的题
+（监控 AI 胡说 / 我学过的东西怎么才能不忘记）误标成了"资料里没有"。
+所以先修标注，再重新量。
 
 【怎么读结果】
-- 目标节在前 3 名内 → 检索没问题，问题在阈值/生成
-- 目标节排第 4~8      → 有救：扩大 top-k 就行
-- 目标节压根不在前 8  → 向量检索这条路对它失效（要靠 rerank 或换切块方式）
+- 每题打印 top-8，标出"目标节"（= 含期望关键词的节）排第几。
+- 末尾统计三件事：
+  ① 目标节落在 top-1 / top-3 / top-5 / top-8 的命中率 → 决定「扩大 top-k 值不值」
+  ② 卷首块（第 0 块）的排名 → 它是否在当"噪声霸榜"
+  ③ "资料里没有"的题，其最高分 vs 有答案题的最高分 → 决定「阈值能不能用」
 
 用法：cd core && python _probe_retrieval.py
 """
@@ -43,18 +45,25 @@ def biaoti(yi_jie):
     return yi_jie.split("\n")[0].strip()
 
 
-# (问题, 期望命中节里的关键词；None = 资料里本来就没有答案)
+# (问题, 期望关键词列表 —— 列表里任一关键词出现在某节正文里，那节就算"正确答案"；
+#  空列表 [] = 这个问题资料里【本来就没有答案】)
 WENTI = [
-    ("global 是用来干嘛的", "global"),
-    ("向量检索的阈值是怎么定出来的", "阈值"),
-    ("我学过的东西怎么才能不忘记", "抗遗忘"),
-    ("怎么监控 AI 的回答有没有胡说", None),
-    ("Python 的装饰器怎么用", None),
+    ("global 是用来干嘛的", ["作用域与"]),
+    ("向量检索的阈值是怎么定出来的", ["分数不够，门直接焊死", "向量检索：不比"]),
+    ("怎么监控 AI 的回答有没有胡说", ["出处校验"]),
+    ("我学过的东西怎么才能不忘记", []),          # 修订：笔记里没有讲"学习方法"的节
+    ("Python 的装饰器怎么用", []),               # 真的没有
 ]
 
 
 def main():
-    print("向量库共 %d 节\n" % len(kuai))
+    print("向量库共 %d 块（含卷首第 0 块）\n" % len(kuai))
+
+    you_paiming = []        # 有答案的题：最优命中排名
+    wu_zuigao = []          # 没答案的题：最高分
+    you_zuigao = []         # 有答案的题：最高分
+    juanhou_paiming = []    # 每题里卷首块（下标 0）排第几
+
     for wenti, guanjian in WENTI:
         resp = client_embed.embeddings.create(model="BAAI/bge-m3", input=[wenti])
         w = resp.data[0].embedding
@@ -63,18 +72,58 @@ def main():
         for i in range(len(vecs)):
             defen.append([xiangsidu(w, vecs[i]), i])
         defen.sort(reverse=True)
+        cixing = {i: n for n, (_, i) in enumerate(defen, 1)}   # 下标 -> 排名
 
         print("=" * 74)
         print("问题：%s" % wenti)
         if guanjian:
-            print("期望命中：含「%s」的那一节" % guanjian)
+            print("期望命中：正文含 %s 的节" % guanjian)
         else:
-            print("期望：资料里本来没有 → 应该被闸门拦下")
+            print("期望：资料里【本来没有】→ 理想结果是答「没有」，或检索不出相关节")
         for mingci, (fen, i) in enumerate(defen[:8], 1):
             biao = biaoti(kuai[i])
-            mark = "   <<< 目标节" if (guanjian and guanjian in kuai[i]) else ""
+            shi_mubiao = guanjian and any(g in kuai[i] for g in guanjian)
+            mark = "   <<< 目标节" if shi_mubiao else ""
             print("  %d. %.4f  [下标%2d] %s%s" % (mingci, fen, i, biao, mark))
+
+        f0 = defen[0][0]
+        juanhou_paiming.append(cixing.get(0, -1))
+        if guanjian:
+            you_zuigao.append(f0)
+            paiming = [cixing[i] for i, k in enumerate(kuai)
+                       if any(g in k for g in guanjian)]
+            zui_hao = min(paiming) if paiming else -1
+            you_paiming.append(zui_hao)
+            print("  → 目标节最优排名：第 %d 名" % zui_hao)
+        else:
+            wu_zuigao.append(f0)
         print()
+
+    # ── ① top-k 命中率 ──────────────────────────────────────────────
+    print("=" * 74)
+    print("【结论 1】目标节落在 top-k 里的比例（%d 道「资料里有」的题）" % len(you_paiming))
+    for k in (1, 3, 5, 8):
+        cheng = sum(1 for p in you_paiming if 0 < p <= k)
+        print("  top-%-2d ： %d/%d 命中（%d%%）" % (k, cheng, len(you_paiming),
+                                             round(cheng * 100 / len(you_paiming))))
+
+    # ── ② 卷首块是不是噪声 ─────────────────────────────────────────
+    print()
+    print("【结论 2】卷首块（第 0 块，只有 4 行的「目录」）在每题的排名")
+    for (wenti, _), p in zip(WENTI, juanhou_paiming):
+        if p == -1:
+            print("  %-28s → 前 8 名之外" % wenti)
+        else:
+            print("  %-28s → 第 %d 名" % (wenti, p))
+
+    # ── ③ 分数能不能分开两类 ───────────────────────────────────────
+    print()
+    print("【结论 3】最高分对比（看两堆数字有没有「分界线」）")
+    print("  资料里【有】答案： %s" % " ".join("%.4f" % x for x in sorted(you_zuigao, reverse=True)))
+    print("  资料里【没有】答案：%s" % " ".join("%.4f" % x for x in sorted(wu_zuigao, reverse=True)))
+    allf = sorted(you_zuigao + wu_zuigao, reverse=True)
+    print("  全部混在一起排：   %s" % " ".join("%.4f" % x for x in allf))
+    print("  → 若两类数字【交错出现】，说明任何一条阈值线都无法分开它们。")
 
 
 if __name__ == "__main__":
