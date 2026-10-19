@@ -10,6 +10,7 @@ import json
 from tools import client_embed, ask_zhishi,client_chat, SHEZHI_JIZHANG
 # 账本搬进 MySQL 之后，读写全部交给 db.py
 from db import jian_biao, cun_yi_bi, du_mingxi, he_ji
+from db import zong_lan, an_tian_tongji, zui_gui_yi_bi
 #判断有没有原始文件数据
 with open(os.path.join(_core, "xiangliang.json"), encoding="utf-8") as f:
     ku = json.load(f)
@@ -172,3 +173,34 @@ def ji_zhang(wo_de_hua):
     xiaoxi.append({"role": "assistant", "content": ta_de_hua})
 
     return ta_de_hua + f"总计:{he_ji()}元。"
+
+
+def kan_tongji():
+    """看统计：把账本"往回想"的几个数摆出来。返回一段字符串（只 return 不 print）。
+
+    这四样东西全是从【同一批原始数据】里现算出来的：
+        总览（笔数/总额/平均/最贵/最便宜）、最贵的一笔、按天汇总。
+    一个都没有额外存 —— 所以记完账删完账，它们永远是对的，不会跟明细打架。
+    这跟 txt 时代"维护一个 zong 变量"是两种活法：一个是"记住结果"，
+    一个是"想不起来就重新算一遍"。数据只有几行时，重新算根本不费劲。
+    """
+    gaiyao = zong_lan()
+    if gaiyao["bi_shu"] == 0:
+        return "账本还是空的，先记一笔吧。"
+
+    hua = "账本统计：\n"
+    hua += f"共 {gaiyao['bi_shu']} 笔，合计 {gaiyao['he']} 元\n"
+    hua += (f"平均每笔 {gaiyao['ping_jun']} 元，"
+            f"最贵 {gaiyao['zui_gui']} 元，最便宜 {gaiyao['zui_pian_yi']} 元\n")
+
+    zui = zui_gui_yi_bi()                              # 空表时这里是 None
+    if zui is not None:
+        # strftime 把 datetime 拍成"年月日 时分"。不格式化的话会带出秒，
+        # 而秒对"哪天花得多"这种问题一点信息量都没有。
+        shi_ke = zui["shijian"].strftime("%Y-%m-%d %H:%M")
+        hua += f"最贵的一笔：{zui['neirong']}（{zui['jine']} 元，{shi_ke}）\n"
+
+    hua += "按天汇总：\n"
+    for tian in an_tian_tongji():                      # 已经是按日期排好序的
+        hua += f"  {tian['riqi']}   {tian['bi_shu']} 笔   {tian['he']} 元\n"
+    return hua.rstrip()                                # 去掉末尾多余换行

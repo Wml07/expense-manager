@@ -150,3 +150,84 @@ def he_ji():
         with lian.cursor() as youbiao:
             youbiao.execute("SELECT COALESCE(SUM(jine), 0) AS he FROM zhangmu")
             return int(youbiao.fetchone()["he"])
+
+
+def zong_lan():
+    """总览：笔数、总额、平均每笔、最贵、最便宜 —— 一次查询全拿回来。
+
+    这五个数全是【算出来的】，一个都没存。加账、删账之后它们自动跟着变，
+    不存在"忘记同步"这种事。
+    """
+    with lian_jie() as lian:
+        with lian.cursor() as youbiao:
+            youbiao.execute("""
+                SELECT COUNT(*)                         AS bi_shu,
+                       COALESCE(SUM(jine), 0)           AS he,
+                       COALESCE(ROUND(AVG(jine), 1), 0) AS ping_jun,
+                       COALESCE(MAX(jine), 0)           AS zui_gui,
+                       COALESCE(MIN(jine), 0)           AS zui_pian_yi
+                FROM zhangmu
+            """)
+            hang = youbiao.fetchone()
+    # 出门之前把类型统一好：COUNT 给 int，SUM/AVG/MAX/MIN 回来都是 Decimal。
+    # 不统一的话，调用方拿到的是一堆"看着像数字、其实不是数字"的东西，
+    # 一碰格式化或运算就要到处转类型（he_ji 昨天已经踩过一次）。
+    return {
+        "bi_shu": int(hang["bi_shu"]),
+        "he": int(hang["he"]),
+        "ping_jun": float(hang["ping_jun"]),
+        "zui_gui": int(hang["zui_gui"]),
+        "zui_pian_yi": int(hang["zui_pian_yi"]),
+    }
+
+
+def an_tian_tongji():
+    """按天汇总：哪天几笔、花了多少。返回 [{riqi, bi_shu, he}, ...]，按日期先后排。
+
+    ⚠️ 这里最关键的一句是 GROUP BY DATE(jilu_shijian)，不是 GROUP BY jilu_shijian。
+       jilu_shijian 是 DATETIME，精确到【秒】。直接拿它分组的话，
+       同一天不同秒的两笔账会各成一组，"按天汇总"就变成了"按秒汇总"。
+       实测过：前天两笔（08:00 和 19:30），不截日期是 2 行，截成日期才是 1 行 150 元。
+       —— 分组之前先把"时间"削成"日期"，这个动作不能省。
+    """
+    with lian_jie() as lian:
+        with lian.cursor() as youbiao:
+            youbiao.execute("""
+                SELECT DATE(jilu_shijian) AS riqi,
+                       COUNT(*)           AS bi_shu,
+                       SUM(jine)          AS he
+                FROM zhangmu
+                GROUP BY DATE(jilu_shijian)
+                ORDER BY riqi
+            """)
+            hangs = youbiao.fetchall()
+    # 逐行把 Decimal 转成 int；riqi 保留日期类型，交给调用方去格式化
+    return [
+        {"riqi": h["riqi"], "bi_shu": int(h["bi_shu"]), "he": int(h["he"])}
+        for h in hangs
+    ]
+
+
+def zui_gui_yi_bi():
+    """花得最多的那一笔。账本空的时候返回 None（调用方要判一下）。
+
+    ORDER BY jine DESC LIMIT 1 = 按金额从大到小排，只取第一条。
+    真有两笔一样贵时它只报一笔 —— 对"最贵的一笔"这种问法是可以接受的，
+    因为题目要的本来就是"一笔"，不是"所有并列的"。
+    """
+    with lian_jie() as lian:
+        with lian.cursor() as youbiao:
+            youbiao.execute("""
+                SELECT neirong, jine, jilu_shijian
+                FROM zhangmu
+                ORDER BY jine DESC
+                LIMIT 1
+            """)
+            hang = youbiao.fetchone()
+    if hang is None:
+        return None
+    return {
+        "neirong": hang["neirong"],
+        "jine": int(hang["jine"]),
+        "shijian": hang["jilu_shijian"],
+    }
